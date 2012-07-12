@@ -3,6 +3,10 @@
 		"keys":["ctrl+shift+b"],
 		"command":"new_bookmark"
 	},
+    {
+        "keys":["ctrl+shift+d"],
+        "command":"delete_bookmark"
+    },
 	{
 		"keys":["ctrl+shift+m"],
 		"command":"browse_bookmarks"

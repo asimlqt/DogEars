@@ -89,4 +89,33 @@ class BrowseBookmarksCommand(sublime_plugin.TextCommand):
         self.view.run_command("select_all_bookmarks", {'name':"dogears_" + key})
 
 
+class DeleteBookmarkCommand(sublime_plugin.TextCommand):
+    def run(self, edit):
+        bookmarkOpts = []
+        self.panelKeys = []
 
+        baseName = os.path.basename(self.view.file_name())
+
+        for key, val in BOOKMARKS.iteritems():
+            bookmarkOpts.append(val['name'])
+            self.panelKeys.append(key)
+
+        window = self.view.window()
+
+        window.show_quick_panel(bookmarkOpts, self.on_bookmark_selected)
+
+    def on_bookmark_selected(self, idx):
+
+        if(idx == -1):
+            print("No bookmark selected. Returning ")
+            return
+
+        # Get the key for the bookmark
+        key = self.panelKeys[idx]
+        bookmarkName = BOOKMARKS[key]['name']
+        del BOOKMARKS[key]
+
+        # Delete the region for the bookmark
+        self.view.erase_regions("dogears_" + key)
+
+        print("Deleting bookmark {0} at key {1}".format(bookmarkName, key))
