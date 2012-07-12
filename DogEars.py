@@ -3,83 +3,90 @@ import os
 import string, random
 
 def id_generator(size=5, chars=string.ascii_uppercase + string.digits):
-	return ''.join(random.choice(chars) for x in range(size))
+    return ''.join(random.choice(chars) for x in range(size))
 
 
 BOOKMARKS = {}
 
 class NewBookmarkCommand(sublime_plugin.TextCommand):
-	def run(self, edit):
-		sel = self.view.sel()
+    def run(self, edit):
+        sel = self.view.sel()
 
-		if not len(sel) == 1:
-			# Work only on single selections
-			return
+        if not len(sel) == 1:
+            # Work only on single selections
+            return
 
-		if not sel[0].begin() == sel[0].end():
-			# Only on single caret selections
-			return
+        if not sel[0].begin() == sel[0].end():
+            # Only on single caret selections
+            return
 
-		point = sel[0].begin()
-		self.point = point
+        point = sel[0].begin()
+        self.point = point
 
-		self.fileName = self.view.file_name()
+        self.fileName = self.view.file_name()
 
-		window = self.view.window()
+        window = self.view.window()
 
-		defaultString = os.path.basename(self.fileName) + " - "
+        defaultString = os.path.basename(self.fileName) + " - "
 
-		window.show_input_panel("Enter Bookmark Name: ", defaultString, self.on_bookmark_name_entered, None, None)
+        window.show_input_panel("Enter Bookmark Name: ", defaultString, self.on_bookmark_name_entered, None, None)
 
-	def on_bookmark_name_entered(self, bookmarkName):
-		# Create a unique ID for the bookmark
-		key = id_generator()
+    def on_bookmark_name_entered(self, bookmarkName):
+        # Create a unique ID for the bookmark
+        key = id_generator()
 
-		bookmark = {}
-		bookmark['fileName'] = self.fileName
-		bookmark['baseName'] = os.path.basename(self.fileName)
-		bookmark['name'] = bookmarkName
+        bookmark = {}
+        bookmark['fileName'] = self.fileName
+        bookmark['baseName'] = os.path.basename(self.fileName)
+        bookmark['name'] = bookmarkName
+        bookmark['viewId'] = self.view.id()
 
-		BOOKMARKS[key] = bookmark
+        BOOKMARKS[key] = bookmark
 
-		# Create a region to behave like a bookmark
-		self.view.add_regions('dogears_' + key, [s for s in self.view.sel()], "", "bookmark")
+        # Create a region to behave like a bookmark
+        self.view.add_regions('dogears_' + key, [s for s in self.view.sel()], "", "bookmark")
 
-		print("Saving bookmark {0} at key {1}".format(bookmarkName, key))
+        print("Saving bookmark {0} at key {1}".format(bookmarkName, key))
 
 
 class BrowseBookmarksCommand(sublime_plugin.TextCommand):
-	def run(self, edit):
-		bookmarkOpts = []
-		self.panelKeys = []
+    def run(self, edit):
+        bookmarkOpts = []
+        self.panelKeys = []
 
-		baseName = os.path.basename(self.view.file_name())
+        baseName = os.path.basename(self.view.file_name())
 
-		for key, val in BOOKMARKS.iteritems():
-			if baseName == val['baseName']:
-				bookmarkOpts.append(val['name'])
-				self.panelKeys.append(key)
+        for key, val in BOOKMARKS.iteritems():
+            bookmarkOpts.append(val['name'])
+            self.panelKeys.append(key)
 
-		window = self.view.window()
+        window = self.view.window()
 
-		window.show_quick_panel(bookmarkOpts, self.on_bookmark_selected)
+        window.show_quick_panel(bookmarkOpts, self.on_bookmark_selected)
 
-	def on_bookmark_selected(self, idx):
+    def on_bookmark_selected(self, idx):
 
-		if(idx == -1):
-			print("No bookmark selected. Returning ")
-			return
+        if(idx == -1):
+            print("No bookmark selected. Returning ")
+            return
 
-		# Get the key for the bookmark
-		key = self.panelKeys[idx]
+        # Get the key for the bookmark
+        key = self.panelKeys[idx]
 
-		# Retrieve the region for the bookmark
-		bmRegion = self.view.get_regions("dogears_" + key)
+        # Set focus on the which the bookmark was set on
+        viewId = BOOKMARKS[key]['viewId']
+        for v in self.view.window().views():
+            if v.id() == viewId:
+                self.view.window().focus_view(v)
+                break
 
-		if len(bmRegion) == 0:
-			return
+        # Retrieve the region for the bookmark
+        bmRegion = self.view.get_regions("dogears_" + key)
 
-		self.view.run_command("select_all_bookmarks", {'name':"dogears_" + key})
+        if len(bmRegion) == 0:
+            return
+
+        self.view.run_command("select_all_bookmarks", {'name':"dogears_" + key})
 
 
 
